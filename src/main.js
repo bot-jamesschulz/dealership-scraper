@@ -1,4 +1,6 @@
-import puppeteer from 'puppeteer-extra';
+import chromium from 'chrome-aws-lambda';
+import { addExtra } from 'puppeteer-extra';
+const puppeteer = addExtra(chromium.puppeteer);
 import fs from 'fs/promises';
 import urls from '../data/cleanedUrls.js'
 import validateListings from './validation/validateListings.js'
@@ -11,7 +13,7 @@ const MIN_VALID_LISTINGS = 25;
 
 puppeteer.use(StealthPlugin());
 
-main(urls.slice(100,150));
+main(urls.slice(148,149));
 
 async function main(urls) {
   
@@ -23,8 +25,16 @@ async function main(urls) {
     
     const dealershipListings = {dealershipUrl: url};
     let inventoryUrl;
+
+    const executablePath = await chromium.executablePath;
+	  console.log(`executable path: ${executablePath}`);
     try {
-      browser = await puppeteer.launch({headless: false});
+      browser = await puppeteer.launch({
+        args: chromium.args,
+        defaultViewport: chromium.defaultViewport,
+        executablePath: await chromium.executablePath,
+        headless: chromium.headless
+      });
       console.log('connected', browser.connected);
       console.log(`Getting listings for ${url}`);
       
@@ -286,22 +296,6 @@ async function getListingData(page) {
             href: element.getAttribute("href")
           });
         }
-
-
-        // if (element.tagName === "A") {
-        //   const innerText = element.innerText;
-        //   trimmedText = innerText.trim().replace(/\r?\n|\r|\s+/,' '); // Clean white space
-        //   // Look for substrings of 4 digits
-        //   validYear = validYearPattern.test(trimmedText)
-        // }
-
-        // if (validYear) {
-        //   listingData.push({
-        //     listingIndex: index,
-        //     innerText: trimmedText, 
-        //     href: element.getAttribute("href")
-        //   });
-        // }
 
         // Get images
         let closestImgDist = Math.abs(prevImgIndex-index);
