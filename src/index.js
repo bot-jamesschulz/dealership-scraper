@@ -1,23 +1,24 @@
 const path = require('path');
 
-// Lambda
+
+
+
+
+
 const puppeteerCore = require("puppeteer-core");
-const chromium = require("@sparticuz/chromium");
 const { addExtra } = require('puppeteer-extra');
+const chromium = require("@sparticuz/chromium");
+const StealthPlugin = require('puppeteer-extra-plugin-stealth');
+const validateListings = require(path.resolve(__dirname, './validation/validateListings.js'));
+
 const puppeteer = addExtra(puppeteerCore);
 
-//const puppeteer = require('puppeteer-extra'); // Local testing
-
-const fs = require('fs/promises');
-const validateListings = require(path.resolve(__dirname, './validation/validateListings.js'));
-const StealthPlugin = require('puppeteer-extra-plugin-stealth');
 const makes = ['agusta', 'aprilia', 'benelli', 'bmw', 'can-am', 'cf moto', 'ducati', 'greenger', 'guzzi', 'harley',  'hisun', 'honda', 'husqvarna', 'indian', 'karavan', 'kawasaki', 'ktm', 'kymco', 'mv agusta', 'polaris', 'royal enfield ', 'ssr', 'stacyc', 'suzuki', 'triumph', 'yamaha', 'beta', 'kayo', 'moke'];
 const MIN_VALID_LISTINGS = 25;
 
 // add stealth plugin and use defaults (all evasion techniques)
 
 puppeteer.use(StealthPlugin());
-
 
 exports.handler = async (event) => {
   const urls = ['http://www.arcadiamotorcycleco.com/'];
