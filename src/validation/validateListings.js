@@ -1,11 +1,11 @@
-import fs from 'fs';
-import makes from '../../data/makeRegexes.json' assert { type: "json" };
-import findModel from './findModel.js';
-import excludedWords from '../../data/excludedWords.json' assert { type: "json" };
-import regexToMake from '../../data/regexToMake.json' assert { type: "json" };
-import bikeData from '../../data/bikeData.json' assert { type: "json" };
+const fs = require('fs');
+const makes = require('../../data/makeRegexes.json');
+const findModel = require('./findModel.js');
+const excludedWords = require('../../data/excludedWords.json');
+const regexToMake = require('../../data/regexToMake.json');
+const bikeData = require('../../data/bikeData.json');
 
-export default function validateListings(unfilteredListings, inventoryHref) {
+module.exports = function validateListings(unfilteredListings, inventoryHref) {
     console.log('validating listings')
     // Unique listing urls with appended makes to listings
     const uniqueListingUrls = new Set();

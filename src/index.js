@@ -1,11 +1,16 @@
-import chromium from 'chrome-aws-lambda';
-import { addExtra } from 'puppeteer-extra';
-const puppeteer = addExtra(chromium.puppeteer);
-import fs from 'fs/promises';
-import urls from '../data/cleanedUrls.js'
-import validateListings from './validation/validateListings.js'
-import StealthPlugin from 'puppeteer-extra-plugin-stealth';
-const path = '../results/results.json';
+const path = require('path');
+
+// Lambda
+const puppeteerCore = require("puppeteer-core");
+const chromium = require("@sparticuz/chromium");
+const { addExtra } = require('puppeteer-extra');
+const puppeteer = addExtra(puppeteerCore);
+
+//const puppeteer = require('puppeteer-extra'); // Local testing
+
+const fs = require('fs/promises');
+const validateListings = require(path.resolve(__dirname, './validation/validateListings.js'));
+const StealthPlugin = require('puppeteer-extra-plugin-stealth');
 const makes = ['agusta', 'aprilia', 'benelli', 'bmw', 'can-am', 'cf moto', 'ducati', 'greenger', 'guzzi', 'harley',  'hisun', 'honda', 'husqvarna', 'indian', 'karavan', 'kawasaki', 'ktm', 'kymco', 'mv agusta', 'polaris', 'royal enfield ', 'ssr', 'stacyc', 'suzuki', 'triumph', 'yamaha', 'beta', 'kayo', 'moke'];
 const MIN_VALID_LISTINGS = 25;
 
@@ -13,30 +18,34 @@ const MIN_VALID_LISTINGS = 25;
 
 puppeteer.use(StealthPlugin());
 
-main(urls.slice(148,149));
 
-async function main(urls) {
-  
+exports.handler = async (event) => {
+  const urls = ['http://www.arcadiamotorcycleco.com/'];
   const allListings = [];
   let browser;
+
+  console.log('urls', urls)
  
   // Extract listing info from each website
   for (const url of urls) {
-    
+
     const dealershipListings = {dealershipUrl: url};
     let inventoryUrl;
 
-    const executablePath = await chromium.executablePath;
-	  console.log(`executable path: ${executablePath}`);
+    //const executablePath = await chromium.executablePath;
+	  //console.log(`executable path: ${executablePath}`);
     try {
       browser = await puppeteer.launch({
-        args: chromium.args,
-        defaultViewport: chromium.defaultViewport,
-        executablePath: await chromium.executablePath,
-        headless: chromium.headless
-      });
+        executablePath: await chromium.executablePath(),
+        headless: true,
+        ignoreHTTPSErrors: false,
+        args: [...chromium.args, "--incognito", "--no-sandbox", "--disable-notifications"]
+      })
       console.log('connected', browser.connected);
-      console.log(`Getting listings for ${url}`);
+
+      console.log('url', url)
+      console.log('browser', browser)
+      console.log('makes', makes)
       
       const inventoryPages = await getInventoryPages(url, browser, makes); 
 
@@ -54,7 +63,7 @@ async function main(urls) {
           // If we have listings in new and used then close out the remaining pages
           if (dealershipListings['new']?.length > MIN_VALID_LISTINGS && (dealershipListings['used']?.length > MIN_VALID_LISTINGS || dealershipListings['owned']?.length > MIN_VALID_LISTINGS)) {
             console.log('found listings in all required categories... exiting');
-            if (page && !page.isClosed()) page?.close();
+            if (page && !page.isClosed()) await page?.close();
             continue;
           }
 
@@ -84,7 +93,7 @@ async function main(urls) {
           console.log(`error getting ${inventoryType} listings`, err);
         } finally {
           try {
-            if (page && !page.isClosed()) page?.close();
+            if (page && !page.isClosed()) await page?.close();
           } catch (err) {
             console.log(`Error closing page for ${inventoryType}:`, err);
           }
@@ -97,15 +106,25 @@ async function main(urls) {
       console.log('testu')
       
     } catch(err) {
-      console.log(`Error getting listings for ${inventoryUrl}`)
+      console.log(`Error getting listings for ${url}`, err)
     } finally {
 
       allListings.push(dealershipListings);    
 
       try {
-        console.log('testk')
-        if (browser && browser.connected) await browser.close();     
-        console.log('testl')
+        console.log('testk2')
+        if (browser && browser.connected) {
+          const pages = await browser.pages();
+          console.log('num pages', pages.length)
+          for (let i = 0; i < pages.length; i++) {
+            console.log("closing page");
+            await pages[i].close();
+            console.log("page closed");
+          }
+          console.log("all pages closed");
+          await browser.close();  
+        }   
+        console.log('testl2')
       } catch (err) {
           console.log(`Error closing browser:`, err);
       }
@@ -113,17 +132,11 @@ async function main(urls) {
   } 
   console.log('testi')
   
-
-  try {      
-    console.log('writing')
-    const allListingsJson = JSON.stringify(allListings, null, 2);
-    console.log('aaaaa')
-    await fs.writeFile(path, allListingsJson, 'utf-8');
-    console.log('done writing')
-  } catch (err) {
-    console.log("Error writing listings to file:", err);
-  }
-  return "All the info";
+  const response = {
+    statusCode: 200,
+    body: JSON.stringify(allListings),
+  };
+  return response;
 }
 
 /**
@@ -450,6 +463,8 @@ async function sortedPageSearch(page, keywords, anchorContentSearch, innerTextSe
   
   const timeout = new Promise(resolve => setTimeout(() => resolve(), 5000));
 
+  console.log('page', page)
+
   await Promise.race([search(), timeout]);
 
   return sortedHrefs;
@@ -460,8 +475,9 @@ async function sortedPageSearch(page, keywords, anchorContentSearch, innerTextSe
       if (keywords.length > 0 && !innerTextSearch) {
         for (const keyword of keywords) {
           console.log('tests');
-          const xpath = `//a[contains(translate(., 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), "${keyword}")]`; 
-          const elementHandles = await page.$x(xpath);
+          const xpath = `xpath/.//a[contains(translate(., 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), "${keyword}")]`; 
+          console.log('tests1');
+          const elementHandles = await page.$$(xpath);
           console.log('testt');
           if (elementHandles.length > 0) {
             // // Pull the hrefs from the anchors
@@ -492,8 +508,8 @@ async function sortedPageSearch(page, keywords, anchorContentSearch, innerTextSe
         
         // Keywords to search for in the innerText, if found, then add the href.
         for (const keyword of keywords) {
-          const xpath = `//a[contains(translate(., 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), "${keyword}")]`; 
-          const elementHandles = await page.$x(xpath);
+          const xpath = `xpath/.//a[contains(translate(., 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), "${keyword}")]`; 
+          const elementHandles = await page.$$(xpath);
           const elementInfo = await Promise.all(elementHandles.map(async elem => await page.evaluate(element => ({ href: element.getAttribute('href'), innerText: element.innerText }), elem)));
           console.log("searching in innertTexts")
           
@@ -519,8 +535,8 @@ async function sortedPageSearch(page, keywords, anchorContentSearch, innerTextSe
       // Search for keywords in the hrefs
       } else if (anchorContentSearch && keywords.length === 0) {
         console.log('searching hrefs')
-        const xpath = `//a[contains(translate(@href, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), "${anchorContentSearch}")]`; 
-        const elementHandles = await page.$x(xpath);
+        const xpath = `xpath/.//a[contains(translate(@href, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), "${anchorContentSearch}")]`; 
+        const elementHandles = await page.$$(xpath);
         
         if (elementHandles.length > 0) {
           // Pull the hrefs from the anchors
@@ -680,7 +696,7 @@ async function getInventoryPages (url, browser, makes) {
     return null;
   } finally {
     try {
-      if (page && !page.isClosed()) page?.close();
+      if (page && !page.isClosed()) await page?.close();
     } catch (err) {
         console.log(`Error closing page:`, err);
     }
@@ -859,18 +875,18 @@ async function pageIsStatic(page, attempts = 0) {
  */
 async function getNextPage(page, inventoryType) {
   const xpaths = [
-    `//*[@aria-label[contains(translate(., 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), "next")]]`,
-    `//*[@title[contains(translate(., 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), "next")]]`,
-    `//span[contains(translate(., 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), "next")]`,
-    `//*[@class[contains(translate(., 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), "next")]]`,
-    `//a[contains(translate(., 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), "next")]`,
-    `//a[contains(translate(., 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), ">")]`
+    `xpath/.//*[@aria-label[contains(translate(., 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), "next")]]`,
+    `xpath/.//*[@title[contains(translate(., 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), "next")]]`,
+    `xpath/.//span[contains(translate(., 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), "next")]`,
+    `xpath/.//*[@class[contains(translate(., 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), "next")]]`,
+    `xpath/.//a[contains(translate(., 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), "next")]`,
+    `xpath/.//a[contains(translate(., 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), ">")]`
   ];
   try {
     console.log("getting next page");
     
     for (const xpath of xpaths) {
-      const elementHandles = await page.$x(xpath);
+      const elementHandles = await page.$$(xpath);
       // Reverse the order so that we look from the bottom of the page up. This is to avoid false positives: for example, if there is a next element in an image carousel.
       elementHandles.reverse();
       // Attempt to click each element
@@ -957,4 +973,3 @@ async function allPageListings(page, inventoryType, listingsData = []) {
     return listingsData;
   }
 }
-

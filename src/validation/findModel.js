@@ -1,4 +1,4 @@
-import Fuse from 'fuse.js'
+const Fuse = require('fuse.js');
 
 const ACCURACY_THRESHOLD = 0.4;
 const IDENTICAL_MATCH = 0;
@@ -20,7 +20,7 @@ const fuse = new Fuse([],options);
  * @param {number[]} searchIndices - The indices within the listing to search for the models. Typically these are the end indices of the make and year.
  * @returns {string|null} - The extracted model from the listing, or null if no match is found.
  */
-export default function findModel(listing, models, searchIndices) {
+module.exports = function findModel(listing, models, searchIndices) {
 
   let bestMatch;
   let extractedModel;

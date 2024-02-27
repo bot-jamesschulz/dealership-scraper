@@ -1,4 +1,4 @@
-export default
+module.exports =
 [
     "http://pacmoto.com/",
     "http://www.southforkcycleworks.com/",
