@@ -1,10 +1,5 @@
 const path = require('path');
 
-
-
-
-
-
 const puppeteerCore = require("puppeteer-core");
 const { addExtra } = require('puppeteer-extra');
 const chromium = require("@sparticuz/chromium");
