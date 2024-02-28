@@ -1,12 +1,17 @@
 const path = require('path');
 
-const puppeteerCore = require("puppeteer-core");
-const { addExtra } = require('puppeteer-extra');
-const chromium = require("@sparticuz/chromium");
+const puppeteer = require('puppeteer-extra');
 const StealthPlugin = require('puppeteer-extra-plugin-stealth');
-const validateListings = require(path.resolve(__dirname, './validation/validateListings.js'));
+const validateListings = require('./validation/validateListings.js');
 
-const puppeteer = addExtra(puppeteerCore);
+
+// const puppeteerCore = require("puppeteer-core");
+// const { addExtra } = require('puppeteer-extra');
+// const chromium = require("@sparticuz/chromium");
+// const StealthPlugin = require('puppeteer-extra-plugin-stealth');
+// const validateListings = require('./validation/validateListings.js');
+
+// const puppeteer = addExtra(puppeteerCore);
 
 const makes = ['agusta', 'aprilia', 'benelli', 'bmw', 'can-am', 'cf moto', 'ducati', 'greenger', 'guzzi', 'harley',  'hisun', 'honda', 'husqvarna', 'indian', 'karavan', 'kawasaki', 'ktm', 'kymco', 'mv agusta', 'polaris', 'royal enfield ', 'ssr', 'stacyc', 'suzuki', 'triumph', 'yamaha', 'beta', 'kayo', 'moke'];
 const MIN_VALID_LISTINGS = 25;
@@ -16,121 +21,118 @@ const MIN_VALID_LISTINGS = 25;
 puppeteer.use(StealthPlugin());
 
 exports.handler = async (event) => {
-  const urls = ['http://www.arcadiamotorcycleco.com/'];
-  const allListings = [];
+  const url = ['http://www.arcadiamotorcycleco.com/'];
+  const listings = [];
   let browser;
 
-  console.log('urls', urls)
+  console.log('url', url)
  
-  // Extract listing info from each website
-  for (const url of urls) {
+  let inventoryUrl;
 
-    const dealershipListings = {dealershipUrl: url};
-    let inventoryUrl;
+  //const executablePath = await chromium.executablePath;
+  //console.log(`executable path: ${executablePath}`);
+  try {
+    browser = await puppeteer.launch({headless: false})
+    // browser = await puppeteer.launch({
+    //   executablePath: await chromium.executablePath(),
+    //   headless: true,
+    //   ignoreHTTPSErrors: false,
+    //   args: [...chromium.args, "--incognito", "--no-sandbox", "--disable-notifications"]
+    // })
+    console.log('connected', browser.connected);
 
-    //const executablePath = await chromium.executablePath;
-	  //console.log(`executable path: ${executablePath}`);
-    try {
-      browser = await puppeteer.launch({
-        executablePath: await chromium.executablePath(),
-        headless: true,
-        ignoreHTTPSErrors: false,
-        args: [...chromium.args, "--incognito", "--no-sandbox", "--disable-notifications"]
-      })
-      console.log('connected', browser.connected);
+    console.log('url', url)
+    console.log('browser', browser)
+    console.log('makes', makes)
+    
+    const inventoryPages = await getInventoryPages(url, browser, makes); 
 
-      console.log('url', url)
-      console.log('browser', browser)
-      console.log('makes', makes)
-      
-      const inventoryPages = await getInventoryPages(url, browser, makes); 
+    // const page = await goToNewTab("http://redbluffmotorsports.com/?utm_source=google&utm_medium=organic&utm_campaign=GMB-service",browser);
+    // const inventoryPages = new Map([["inventory", page]]);
+    
+    console.log('inventory pages', inventoryPages?.keys())
 
-      // const page = await goToNewTab("http://redbluffmotorsports.com/?utm_source=google&utm_medium=organic&utm_campaign=GMB-service",browser);
-      // const inventoryPages = new Map([["inventory", page]]);
-      
-      console.log('inventory pages', inventoryPages?.keys())
-
-      // Extract listing from each type of inventory page (e.g. 'new', 'used')
-      for (const  [ inventoryType, page ] of inventoryPages){
-        console.log('testh')
-        try {
-          let unfilteredListings;
-
-          // If we have listings in new and used then close out the remaining pages
-          if (dealershipListings['new']?.length > MIN_VALID_LISTINGS && (dealershipListings['used']?.length > MIN_VALID_LISTINGS || dealershipListings['owned']?.length > MIN_VALID_LISTINGS)) {
-            console.log('found listings in all required categories... exiting');
-            if (page && !page.isClosed()) await page?.close();
-            continue;
-          }
-
-          inventoryUrl = page.url();
-          
-          console.log(`Getting '${inventoryType}' listings for ${inventoryUrl}`);
-          
-          await page.bringToFront();
-
-          // Iterate through all pages of the inventory type (e.g. pages 1-10 of 'new')
-          unfilteredListings = await allPageListings(page, inventoryType);
-          if (unfilteredListings.length > 0) {
-            let validatedListings;
-            try {
-              validatedListings = validateListings(unfilteredListings, inventoryUrl);
-            } catch (err) {
-              console.log('Error validating listings', err);
-            }
-
-
-
-            dealershipListings[inventoryType] = validatedListings;
-          }
-          
-
-        } catch(err) {
-          console.log(`error getting ${inventoryType} listings`, err);
-        } finally {
-          try {
-            if (page && !page.isClosed()) await page?.close();
-          } catch (err) {
-            console.log(`Error closing page for ${inventoryType}:`, err);
-          }
-        }
-        console.log('testg')
-
-        
-
-      }
-      console.log('testu')
-      
-    } catch(err) {
-      console.log(`Error getting listings for ${url}`, err)
-    } finally {
-
-      allListings.push(dealershipListings);    
-
+    // Extract listing from each type of inventory page (e.g. 'new', 'used')
+    for (const  [ inventoryType, page ] of inventoryPages){
+      console.log('testh')
       try {
-        console.log('testk2')
-        if (browser && browser.connected) {
-          const pages = await browser.pages();
-          console.log('num pages', pages.length)
-          for (let i = 0; i < pages.length; i++) {
-            console.log("closing page");
-            await pages[i].close();
-            console.log("page closed");
+
+        // If we have listings in new and used then close out the remaining pages
+        if (dealershipListings['new']?.length > MIN_VALID_LISTINGS && (dealershipListings['used']?.length > MIN_VALID_LISTINGS || dealershipListings['owned']?.length > MIN_VALID_LISTINGS)) {
+          console.log('found listings in all required categories... exiting');
+          if (page && !page.isClosed()) await page?.close();
+          continue;
+        }
+
+        inventoryUrl = page.url();
+        
+        console.log(`Getting '${inventoryType}' listings for ${inventoryUrl}`);
+        
+        await page.bringToFront();
+
+        // Iterate through all pages of the inventory type (e.g. pages 1-10 of 'new')
+        const unfilteredListings = await allPageListings(page, inventoryType);
+        if (unfilteredListings.length > 0) {
+          let validatedListings;
+
+          const filteredListingUrls = listings.map(listing => listing?.url);
+
+          try {
+            validatedListings = validateListings(unfilteredListings, filteredListingUrls, inventoryUrl, inventoryType);
+          } catch (err) {
+            console.log('Error validating listings', err);
           }
-          console.log("all pages closed");
-          await browser.close();  
-        }   
-        console.log('testl2')
-      } catch (err) {
-          console.log(`Error closing browser:`, err);
+          
+          if (validatedListings) listings.concat(validatedListings);
+          
+        }
+      } catch(err) {
+        console.log(`error getting ${inventoryType} listings`, err);
+      } finally {
+        try {
+          if (page && !page.isClosed()) await page?.close();
+        } catch (err) {
+          console.log(`Error closing page for ${inventoryType}:`, err);
+        }
       }
-    } 
+      console.log('testg')
+
+      
+
+    }
+    console.log('testu')
+    
+  } catch(err) {
+    console.log(`Error getting listings for ${url}`, err)
+  } finally {
+
+
+    try {
+      console.log('testk2')
+      if (browser && browser.connected) {
+        const pages = await browser.pages();
+        console.log('num pages', pages.length)
+        for (let i = 0; i < pages.length; i++) {
+          console.log("closing page");
+          await pages[i].close();
+          console.log("page closed");
+        }
+        console.log("all pages closed");
+        await browser.close();  
+      }   
+      console.log('testl2')
+    } catch (err) {
+        console.log(`Error closing browser:`, err);
+    }
   } 
   console.log('testi')
   
   const response = {
     statusCode: 200,
-    body: JSON.stringify(allListings),
+    body: JSON.stringify({
+      dealership: url,
+      listings
+    }),
   };
   return response;
 }

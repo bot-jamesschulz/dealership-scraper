@@ -11,6 +11,8 @@
   "license": "ISC",
   "dependencies": {
     "@sparticuz/chromium": "^122.0.0",
+    "@supabase/supabase-js": "^2.39.7",
+    "dotenv": "^16.4.5",
     "fuse.js": "^7.0.0",
     "puppeteer-core": "22.2.0",
     "puppeteer-extra": "^3.1.18",

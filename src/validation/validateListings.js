@@ -5,10 +5,10 @@ const excludedWords = require('../../data/excludedWords.json');
 const regexToMake = require('../../data/regexToMake.json');
 const bikeData = require('../../data/bikeData.json');
 
-module.exports = function validateListings(unfilteredListings, inventoryHref) {
+module.exports = function validateListings(unfilteredListings, filteredListingUrls, inventoryHref, inventoryType) {
     console.log('validating listings')
     // Unique listing urls with appended makes to listings
-    const uniqueListingUrls = new Set();
+    const uniqueListingUrls = new Set(filteredListingUrls);
     const results = [];
     const extractedData = [];
     const rejectedListings = [];
@@ -128,6 +128,7 @@ module.exports = function validateListings(unfilteredListings, inventoryHref) {
                 extractedModel: listingModel?.extractedModel,
                 searchedModel: listingModel?.searchedModel,
                 year: validYear,
+                condition: condition(validYear, inventoryType),
                 listing: cleanedListing,
                 url: url.href,
                 img: listingData.img
@@ -160,4 +161,13 @@ function makeUrl(listingHref, inventoryHref) {
         console.log('error creating url from: ', listingHref)
     }
     
+}
+
+function condition(year, inventoryType) {
+    if (inventoryType === 'new' 
+    || inventoryType === 'used') return inventoryType;
+
+    const currYear  = new Date().getFullYear();
+
+    return year >= currYear ? 'new' : 'used';
 }
