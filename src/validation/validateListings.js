@@ -40,9 +40,10 @@ module.exports = function validateListings(unfilteredListings, filteredListingUr
         
         if (!validYears || noLetters) continue;
 
-        const validYear = validYears[0];
+        const validYear = parseInt(validYears[0]);
+        const validYearLength = 4;
         const yearStartIndex = cleanedListing.indexOf(validYear);
-        let yearEndIndex = yearStartIndex + validYear.length - 1;
+        let yearEndIndex = yearStartIndex + validYearLength - 1;
         
         // Add a space after the year if it doesn't already have one
         if (cleanedListing[yearEndIndex + 1] && cleanedListing[yearEndIndex + 1] !== ' ') {
@@ -124,14 +125,12 @@ module.exports = function validateListings(unfilteredListings, filteredListingUr
             results.push(cleanedListing);
             extractedData.push({
                 make: makeKey,
-                listingMake: listingMake,
-                extractedModel: listingModel?.extractedModel,
-                searchedModel: listingModel?.searchedModel,
+                model: listingModel?.extractedModel,
                 year: validYear,
-                condition: condition(validYear, inventoryType),
+                condition: condition(inventoryType),
                 listing: cleanedListing,
-                url: url.href,
-                img: listingData.img
+                detailsUrl: url.href,
+                imgSrc: listingData.img
             })
         } else {
             rejectedListings.push(cleanedListing);
@@ -163,11 +162,9 @@ function makeUrl(listingHref, inventoryHref) {
     
 }
 
-function condition(year, inventoryType) {
-    if (inventoryType === 'new' 
-    || inventoryType === 'used') return inventoryType;
+function condition(inventoryType) {
+    if (inventoryType === 'new') return inventoryType;
+    if (inventoryType === 'used' || inventoryType === 'owned') return 'used';
 
-    const currYear  = new Date().getFullYear();
-
-    return year >= currYear ? 'new' : 'used';
+    return null;
 }

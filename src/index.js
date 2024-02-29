@@ -1,28 +1,32 @@
 const path = require('path');
 
-const puppeteer = require('puppeteer-extra');
-const StealthPlugin = require('puppeteer-extra-plugin-stealth');
-const validateListings = require('./validation/validateListings.js');
-
-
-// const puppeteerCore = require("puppeteer-core");
-// const { addExtra } = require('puppeteer-extra');
-// const chromium = require("@sparticuz/chromium");
+// const fs = require('fs/promises');
+// const puppeteer = require('puppeteer-extra');
 // const StealthPlugin = require('puppeteer-extra-plugin-stealth');
 // const validateListings = require('./validation/validateListings.js');
+// const { dbInsert } = require('./db/dbInsert');
 
-// const puppeteer = addExtra(puppeteerCore);
+const puppeteerCore = require("puppeteer-core");
+const { addExtra } = require('puppeteer-extra');
+const chromium = require("@sparticuz/chromium");
+const StealthPlugin = require('puppeteer-extra-plugin-stealth');
+const validateListings = require('./validation/validateListings');
+const { dbInsert } = require('./db/dbInsert');
+const puppeteer = addExtra(puppeteerCore);
 
 const makes = ['agusta', 'aprilia', 'benelli', 'bmw', 'can-am', 'cf moto', 'ducati', 'greenger', 'guzzi', 'harley',  'hisun', 'honda', 'husqvarna', 'indian', 'karavan', 'kawasaki', 'ktm', 'kymco', 'mv agusta', 'polaris', 'royal enfield ', 'ssr', 'stacyc', 'suzuki', 'triumph', 'yamaha', 'beta', 'kayo', 'moke'];
-const MIN_VALID_LISTINGS = 25;
+const MIN_VALID_LISTINGS = 10;
 
 // add stealth plugin and use defaults (all evasion techniques)
 
 puppeteer.use(StealthPlugin());
 
 exports.handler = async (event) => {
-  const url = ['http://www.arcadiamotorcycleco.com/'];
+  console.log('event');
+  console.log('event', event);
+  const url = event.url;
   const listings = [];
+  const foundListings= new Set();
   let browser;
 
   console.log('url', url)
@@ -32,13 +36,13 @@ exports.handler = async (event) => {
   //const executablePath = await chromium.executablePath;
   //console.log(`executable path: ${executablePath}`);
   try {
-    browser = await puppeteer.launch({headless: false})
-    // browser = await puppeteer.launch({
-    //   executablePath: await chromium.executablePath(),
-    //   headless: true,
-    //   ignoreHTTPSErrors: false,
-    //   args: [...chromium.args, "--incognito", "--no-sandbox", "--disable-notifications"]
-    // })
+    //browser = await puppeteer.launch({headless: false})
+    browser = await puppeteer.launch({
+      executablePath: await chromium.executablePath(),
+      headless: true,
+      ignoreHTTPSErrors: false,
+      args: [...chromium.args, "--incognito", "--no-sandbox", "--disable-notifications"]
+    })
     console.log('connected', browser.connected);
 
     console.log('url', url)
@@ -46,9 +50,6 @@ exports.handler = async (event) => {
     console.log('makes', makes)
     
     const inventoryPages = await getInventoryPages(url, browser, makes); 
-
-    // const page = await goToNewTab("http://redbluffmotorsports.com/?utm_source=google&utm_medium=organic&utm_campaign=GMB-service",browser);
-    // const inventoryPages = new Map([["inventory", page]]);
     
     console.log('inventory pages', inventoryPages?.keys())
 
@@ -58,7 +59,10 @@ exports.handler = async (event) => {
       try {
 
         // If we have listings in new and used then close out the remaining pages
-        if (dealershipListings['new']?.length > MIN_VALID_LISTINGS && (dealershipListings['used']?.length > MIN_VALID_LISTINGS || dealershipListings['owned']?.length > MIN_VALID_LISTINGS)) {
+        console.log('found listings', [...foundListings]);
+        
+        if (foundListings.has('new') 
+        && (foundListings.has('used') || foundListings.has('owned'))) {
           console.log('found listings in all required categories... exiting');
           if (page && !page.isClosed()) await page?.close();
           continue;
@@ -82,8 +86,12 @@ exports.handler = async (event) => {
           } catch (err) {
             console.log('Error validating listings', err);
           }
+
+          if (validatedListings.length > MIN_VALID_LISTINGS) foundListings.add(inventoryType);
           
-          if (validatedListings) listings.concat(validatedListings);
+          if (validatedListings.length > 0) listings.push(...validatedListings);
+
+          console.log('listings so far', listings)
           
         }
       } catch(err) {
@@ -96,8 +104,6 @@ exports.handler = async (event) => {
         }
       }
       console.log('testg')
-
-      
 
     }
     console.log('testu')
@@ -126,7 +132,14 @@ exports.handler = async (event) => {
     }
   } 
   console.log('testi')
-  
+  try {
+    const errors = await dbInsert(listings, 'listings')
+
+    if (errors) console.log('errors inserting into db', errors);
+  } catch (err) {
+    console.log('Error inserting to db:', err);
+  }
+
   const response = {
     statusCode: 200,
     body: JSON.stringify({
@@ -134,7 +147,8 @@ exports.handler = async (event) => {
       listings
     }),
   };
-  return response;
+
+  return listings;
 }
 
 /**
@@ -559,6 +573,7 @@ async function goToNewTab(url, browser) {
     console.log('testo')
     page = await browser.newPage();
     console.log('testp')
+    console.log(url, browser, makes)
     await page.goto(url,{ waitUntil: 'load' });
     console.log('testq')
     return page;
@@ -568,7 +583,6 @@ async function goToNewTab(url, browser) {
     return null;
   }
 }
-
 
 /**
  * Checks if the given inventory page set is valid.
