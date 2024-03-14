@@ -14,11 +14,14 @@
     "cash",
     "price",
     "getapproved",
-    "moreimages",
     "moreinfo",
     "sale",
     "specification",
     "availability",
     "read",
-    "details"
+    "details",
+    "image",
+    "toolbox",
+    "financing",
+    "apply"
 ]

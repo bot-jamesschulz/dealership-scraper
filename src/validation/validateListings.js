@@ -16,7 +16,7 @@ module.exports = function validateListings(unfilteredListings, filteredListingUr
     let loopCount = 0;
 
     for (const listingData of unfilteredListings) {
-        // loopCount++;
+        loopCount++;
         // console.log('LOOP COUNT: ', loopCount);
         // console.log(listingData)
         
@@ -116,7 +116,7 @@ module.exports = function validateListings(unfilteredListings, filteredListingUr
         const models = modelData.map(model => model.model);
         const listingModel = findModel(cleanedListing.toLowerCase(), models, [makeKeyEndIndex, yearEndIndex]);
         // if (true) {
-        //     console.log('MODEL: -> ', listingModel?.searchedModel);
+        //     console.log('MODEL: -> ', listingModel?.extractedModel);
         //     console.log('LISTING: -> ', cleanedListing);
         //     console.log('\n');           
         // }    
