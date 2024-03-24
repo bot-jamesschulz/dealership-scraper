@@ -4,7 +4,6 @@ const supabase = require('./dbConfig');
 exports.dbInsert = async (rows, table) => {
     console.log('inserting into db:', 'table:');
     console.log('table', table);
-    console.log('first row:', rows[1]);
 
     // const results = await supabase
     //         .from(table)
