@@ -5,12 +5,11 @@ const excludedWords = require('../../data/excludedWords.json');
 const regexToMake = require('../../data/regexToMake.json');
 const bikeData = require('../../data/bikeData.json');
 
-module.exports = function validateListings(unfilteredListings, filteredListingUrls, inventoryHref, inventoryType) {
+module.exports = function validateListings(unfilteredListings, filteredListingUrls, inventoryHref) {
     console.log('validating listings')
     // Unique listing urls with appended makes to listings
     const uniqueListingUrls = new Set(filteredListingUrls);
-    const results = [];
-    const extractedData = [];
+    const extractedData = new Map();
     const rejectedListings = [];
     const validYearPattern = /(?:(?<=^)|(?<=\s))((19|20)([0-9][0-9]))(?=\s|$)/g;
     let loopCount = 0;
@@ -102,8 +101,6 @@ module.exports = function validateListings(unfilteredListings, filteredListingUr
             }
         }
 
-
-
         if (!makeKey) {
             console.log(`No make key for ${listingMake}: ${cleanedListing}`);
             
@@ -122,15 +119,12 @@ module.exports = function validateListings(unfilteredListings, filteredListingUr
         // }    
         
         if (listingModel) { 
-            results.push(cleanedListing);
-            extractedData.push({
+            extractedData.set(listingData.listingIndex, {
                 make: makeKey,
                 model: listingModel?.extractedModel,
                 year: validYear,
-                condition: condition(inventoryType),
                 listing: cleanedListing,
                 detailsUrl: url.href,
-                imgSrc: listingData.img
             })
         } else {
             rejectedListings.push(cleanedListing);
@@ -160,11 +154,4 @@ function makeUrl(listingHref, inventoryHref) {
         console.log('error creating url from: ', listingHref)
     }
     
-}
-
-function condition(inventoryType) {
-    if (inventoryType === 'new') return inventoryType;
-    if (inventoryType === 'used' || inventoryType === 'owned') return 'used';
-
-    return null;
 }

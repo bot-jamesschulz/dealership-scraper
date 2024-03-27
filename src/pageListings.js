@@ -1,5 +1,6 @@
-const findClosestImgs = require('./findClosestImgs')
-const getListingData = require('./getListingData')
+const groupListingData = require('./groupListingData');
+const getListingData = require('./getListingData');
+const delay = require('./delay');
 
 /**
  * Retrieves the listings of vehicles from a web page.
@@ -9,33 +10,22 @@ const getListingData = require('./getListingData')
  * @returns {Object} - An object containing the vehicle information.
  */
 async function pageListings(page) {
-    const TIMEOUT = 10000; // ms
+    const timeout = 10000; // ms
     
     console.log('getting listings')
   
-    let listings;
-  
-    const timeout = new Promise((_,reject) => {
-      setTimeout(() => {
-        reject(new Error('timed out'));
-      }, TIMEOUT); 
-    });
+    let listingData;
   
     try {
-      listings = await Promise.race([getListingData(page), timeout]);
+      listingData = await Promise.race([
+        getListingData(page), 
+        delay(timeout)]);
       console.log('racea done')
     } catch (err) {
       console.log('error waiting for listings', err);
     }
-  
-    let listingsWithImage;
-    try {
-      listingsWithImage = findClosestImgs(listings);
-    } catch (err) {
-      console.log('error finding closest images', err)
-    }
    
-    return listingsWithImage;
+    return listingData;
     
   }
   module.exports = pageListings;

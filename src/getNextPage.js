@@ -1,4 +1,5 @@
 const handleElement = require('./handleElement');
+const delay = require('./delay');
 
 // Find the next page navigation and return the navigated page
 /**
@@ -8,6 +9,7 @@ const handleElement = require('./handleElement');
  * @returns {Promise<Page|null>} - A promise that resolves to the next page of inventory, or null if no next page is found.
  */
 async function getNextPage(page, inventoryType) {
+    const timeout = 10000;
     const xpaths = [
       `xpath/.//*[@aria-label[contains(translate(., 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), "next")]]`,
       `xpath/.//*[@title[contains(translate(., 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), "next")]]`,
@@ -20,7 +22,9 @@ async function getNextPage(page, inventoryType) {
       console.log("getting next page");
       
       for (const xpath of xpaths) {
-        const elementHandles = await page.$$(xpath);
+        const elementHandles = await Promise.race([
+          page.$$(xpath),
+          delay(timeout)]);
         // Reverse the order so that we look from the bottom of the page up. This is to avoid false positives: for example, if there is a next element in an image carousel.
         elementHandles.reverse();
         // Attempt to click each element
