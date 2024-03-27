@@ -8,6 +8,7 @@ const { addExtra } = require('puppeteer-extra');
 const StealthPlugin = require('puppeteer-extra-plugin-stealth');
 const puppeteer = addExtra(puppeteerCore);
 const dbTable = 'listings';
+const proxyUrl = process.env.PROXY_URL;
 
 const chromium = require("@sparticuz/chromium");
 const http = require('http');

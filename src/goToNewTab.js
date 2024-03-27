@@ -1,7 +1,6 @@
 require('dotenv').config();
 const waitForStaticPage = require('./waitForStaticPage');
 
-const proxyUrl = process.env.PROXY_URL;
 const proxyUsername = process.env.PROXY_USERNAME;
 const proxyPassword = process.env.PROXY_PASSWORD;
 
