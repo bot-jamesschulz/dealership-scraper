@@ -9,27 +9,107 @@ async function getListingData(page) {
       
       // Extract the images/listings from the page, keyed by their position in the DOM
       listingData = await page.evaluate(async () => {
-        const validYearPattern = /(?:(?<=^)|(?<=\s))(19|20)([0-9][0-9])(?=\s|$)/g;
+        console.log('Page evaluation start');
+  
+        const mileageVocab = ['mile', 'odometer']
         const MINIMUM_IMG_DIST = 10;
         let prevImgIndex = 0;
-        const listingImgs = {};  
-        const listingData = [];
+        const listings = [];
+        const listingImgs = {};
+        const listingPrices = [];
+        const listingMileages = [];     
         const elementNodes = document.querySelectorAll('*');
         const elements = Array.from(elementNodes);
   
         for (const [index, element] of elements.entries()) {
+
+          if (!element) continue;
+
           // Get text content and associated hrefs
-          let trimmedText = null;
-          let validYear = false;
           const backgroundImg = window.getComputedStyle(element).backgroundImage === 'none' 
             ? null
             : window.getComputedStyle(element).backgroundImage;
-  
-          
-          if (element?.tagName === "A") {
-            const innerText = element.innerText;
-            trimmedText = innerText.trim().replace(/\r?\n|\r|\s+/,' '); // Clean white space
-            listingData.push({
+
+          const trimmedText = element.innerText
+            ?.trim()
+            .replace(/\r?\n|\r|\s+/,' ');
+
+            
+          let wholeText;
+          const children = element.childNodes;
+          for (const child of children) {
+            if (child.nodeType === Node.TEXT_NODE) {
+              wholeText = child.wholeText;
+              break;
+            }
+          }
+              
+          // Looking for price
+
+          if (wholeText?.includes('$') && wholeText?.length < 100) {
+            // console.log('aabaa $$', wholeText)
+            const priceRegex = /\$[\d,]+/;
+
+            let price = trimmedText?.match(priceRegex);
+            let currElement = element;
+            while (!price && currElement.parentNode) {
+              currElement = currElement.parentNode;
+              price = currElement?.innerText?.match(priceRegex);
+            } 
+            
+            const trimmedPrice = price?.[0].replace(/\D/g, "");
+            if (trimmedPrice) {
+              listingPrices[index] = trimmedPrice;       
+            }
+             console.log('aabaa trimmedPrice', index, trimmedPrice)
+          }
+
+          // Looking for mileage
+          if (wholeText && mileageVocab.find(vocab => wholeText.toLowerCase().includes(vocab))) {
+            const mileageRegex = /[\d,]+/;
+            const trimmedText = element.innerText
+              ?.trim()
+              .replace(/\r?\n|\r|\s+/,' ');
+            
+
+            let mileage = trimmedText?.match(mileageRegex);
+
+            // console.log('aabaa initial mileage:', mileage?.[0], trimmedText)
+            
+            // First check to see if mileage is present in the previous element
+            // const strictMileage = /^[0-9.,!]+$/;
+            const maxTextLength = 15;
+            if (!mileage) {
+              
+              const prevElem = element.previousSibling;
+              const prevElemInnerText = prevElem?.innerText;
+              if (prevElemInnerText?.length < maxTextLength) {
+                mileage = prevElemInnerText?.match(mileageRegex)
+              }  
+            }
+
+            // If not present in previous element then find it ahead
+            let currElement = element;
+            let offset = 0;
+            while (!mileage && index + offset < elements.length) {
+              offset++;
+              currElement = elements[index + offset];
+              const currElementInnerText = currElement?.innerText;
+              if (currElementInnerText?.length < maxTextLength) {
+                mileage = currElementInnerText?.match(mileageRegex);
+              }
+            } 
+
+            const trimmedMileage = mileage?.[0].replace(/\D/g, "");
+
+            // console.log('aabaa mileage', trimmedMileage);
+            
+            listingMileages[index] = trimmedMileage;
+          }
+          // Looking for listings
+          if (trimmedText && element.tagName === "A") {
+            
+            listings.push({
               listingIndex: index,
               innerText: trimmedText, 
               href: element.getAttribute("href")
@@ -42,28 +122,22 @@ async function getListingData(page) {
           if (closestImgDist <= MINIMUM_IMG_DIST) continue;
           
           // Make sure that the image isn't part of a subsection/gallery of images
-          if ((element?.tagName === 'IMG') || (element?.tagName === 'INPUT') 
+          if ((element.tagName === 'IMG') || (element.tagName === 'INPUT') 
           && (element.hasAttribute('src') || element.hasAttribute('srcset'))) {
             const waitInterval = 100; // Time to wait before checking the src attribute again
             const maxWaitTime = 500; // Maximum wait time for checking src
             let elapsedTime = 0;
-            console.log('src', element.getAttribute('src'))
-  
             let waitCount = 0;
             
             // Wait for src attribute to be set
             const waitForSrc = async () => {
               
-              
-              console.log('src value', element.getAttribute('src'))
-              console.log('||')
               if (element.getAttribute('src')) {
+                console.log('aabaa in src')
                 let url;
                 try {
                   url = new URL(element.getAttribute('src'), window.location.href )
                 } catch (err) {}
-                console.log('src', url.href)
-                // console.log(index)
   
                 if (url.href.startsWith('http')) {
                   //console.log('src')
@@ -72,38 +146,33 @@ async function getListingData(page) {
                   return;
                 }
               }
-  
+              //console.log('aabaa looking for srcset')
               if (element.getAttribute('srcset')) {
+                //console.log('aabaa in srcset')
                 let url;
                 url = element.getAttribute('srcset');
                 const endOfUrl = url.indexOf(' ');
                 const firstUrl = endOfUrl !== -1 ? url.substring(0, endOfUrl) : url;
-                console.log('srcset')
-                // console.log(index)
                 listingImgs[index] = firstUrl; // Save the img's url with an associated element index, for use later to find closest listing element
                 prevImgIndex = index;
   
                 return;
               }
-              console.log('no src/scrset yet')
               elapsedTime += waitInterval;
               ++waitCount;
-              console.log('waiting', waitCount)
-              console.log('elapsed time', elapsedTime)
               if (elapsedTime < maxWaitTime) {
-                console.log('a')
+                console.log(' a')
                 await new Promise(resolve => setTimeout(resolve, waitInterval));
-                console.log('b')
+                console.log(' b')
                 await waitForSrc();
-                console.log('c')
+                console.log(' c')
               }
             };
-            console.log('d')
+            console.log(' d')
             
             await waitForSrc();
-            console.log('e')
+            console.log(' e')
           }
-  
           // Make sure that the background-image isn't part of a subsection/gallery of images
           if (backgroundImg) {
             const backgroundImgUrlMatch = backgroundImg.match(/url\("(.+)"\)/); // Extract the url
@@ -113,9 +182,10 @@ async function getListingData(page) {
             prevImgIndex = index;         
           }
         }   
-        return {listingData, listingImgs};
+
+        return {listings, listingImgs, listingPrices, listingMileages};
       });
-      console.log('page data', listingData?.listingImgs);
+      // console.log('page data', listingData?.listingImgs);
     } catch(err) {
       console.log('error retrieving data/images from the DOM',err)
       return;
@@ -126,5 +196,6 @@ async function getListingData(page) {
     //console.log('images:',  listingImgs, 'length', Object.keys(listingImgs).length);
     //console.log("Searching for listings on:", page.url())
   }
+  
 
   module.exports = getListingData;

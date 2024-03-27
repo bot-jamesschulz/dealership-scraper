@@ -1,4 +1,5 @@
 require('dotenv').config();
+const waitForStaticPage = require('./waitForStaticPage');
 
 const proxyUrl = process.env.PROXY_URL;
 const proxyUsername = process.env.PROXY_USERNAME;
@@ -34,11 +35,11 @@ async function goToNewTab(url, browser) {
         }
         });
 
-        // page.on("console", (log) => {
-        //   if(log.text().includes('phone')) {
-        //     console.log(`Log from client: [${log.text()}] `)
-        //   }  
-        // });
+        page.on("console", (log) => {
+          if(log.text().includes('aabaa')) {
+            console.log(`Log from client: [${log.text()}] `)
+          }  
+        });
 
         // page.on('request', async (req) => {
         //   //console.log('request POST data', await req.fetchPostData());
@@ -76,6 +77,8 @@ async function goToNewTab(url, browser) {
         
         console.log('testp')
         await page.goto(url,{ waitUntil: 'load'});
+         await waitForStaticPage(page);
+        
         console.log('testq')
         return page;
     } catch(err) {

@@ -1,12 +1,13 @@
 const waitForNewContent = require('./waitForNewContent');
+const scrollPage = require('./scrollPage');
 
 /**
  * 
  * @param {*} page 
  */
-async function waitForStaticPage(page, attempts = 0) {
-    const viewportWidth = 1920; // px 
-    const maxAttempts = 5;
+async function waitForStaticPage(page, maxAttempts = 5) {
+    
+    let attempts = 0;
     let pageLoaded;
   
     while(!pageLoaded && attempts <= maxAttempts) {
@@ -20,29 +21,8 @@ async function waitForStaticPage(page, attempts = 0) {
         pageLoaded = await page.evaluate(() => document.readyState === 'complete');
   
         if (!pageLoaded) continue;
-  
-        const pageHeight = await page.evaluate(() => document.body.scrollHeight);
     
-        // Set the viewport size to cover the entire page height
-        await page.setViewport({ width: viewportWidth, height: pageHeight});
-    
-        await page.evaluate(async () => {
-          // Scroll viewport across the entire page to make sure all content is loaded
-          await new Promise((resolve) => {
-            let totalHeight = 0;
-            const distance = 400;
-            const timer = setInterval(() => {
-              var scrollHeight = document.body.scrollHeight;
-              window.scrollBy(0, distance);
-              totalHeight += distance;
-    
-              if(totalHeight >= scrollHeight - window.innerHeight) {
-                clearInterval(timer);
-                resolve();
-              }
-            }, 100);
-          });
-        });
+        await scrollPage(page);
   
         // wait for new lazy loaded content triggered by scrolling
         await waitForNewContent(page, {minFulfilled: 0});

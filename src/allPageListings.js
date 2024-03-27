@@ -7,10 +7,10 @@ const isNewListings = require ('./isNewListings');
  * 
  * @param {Page} page - The Puppeteer page object.
  * @param {string} inventoryType - The type of inventory to search for (new, used, etc).
- * @param {Array} listingsData - The array to store the retrieved listings.
+ * @param {Array} listingData - The array ob objects containing ungoruped listings and their attributes.
  * @returns {Promise<Array>} - A promise that resolves to an array of listings data.
  */
-async function allPageListings(page, inventoryType, responseCount, listingsData = []) {
+async function allPageListings(page, inventoryType, responseCount, listingData = []) {
     try {
       // Search for listings on the current page
       const url= page.url();
@@ -25,12 +25,12 @@ async function allPageListings(page, inventoryType, responseCount, listingsData 
       // Add listings to the accumulator
       if (listings) {
           console.log('testy')
-          listingsData.push(...listings)
+          listingData.push(listings)
       }
       console.log('testz')
   
       
-      //console.log(`Listings for page ${listingsData.length + 1}: ${url}`);
+      //console.log(`Listings for page ${listingData.length + 1}: ${url}`);
       //logNestedObject(listings);
       
       console.log('resCount before newPage:', responseCount.count);
@@ -44,27 +44,26 @@ async function allPageListings(page, inventoryType, responseCount, listingsData 
         return;
       }
   
-  
       console.log("Next page loaded")
-      const nextPageListingsData = await pageListings(nextPage);
+      const nextPagelistingData = await pageListings(nextPage);
   
       const nextResponseCount = responseCount.count;
       console.log('resCount after newPage:', responseCount.count);
   
-      let continueListingSearch = isNewListings(listingsData, nextPageListingsData) && currResponseCount !== nextResponseCount;
+      let continueListingSearch = isNewListings(listingData.map(data => data.listings).flat(), nextPagelistingData?.listings) && currResponseCount !== nextResponseCount;
       // Compare the current page listings to the next page listings
       // Keep searching if they are different
       console.log('different listings?', continueListingSearch)
   
       if (continueListingSearch) {
-        await allPageListings(nextPage, inventoryType, responseCount, listingsData);
+        await allPageListings(nextPage, inventoryType, responseCount, listingData);
       }
   
       console.log("End of inventory"); 
     } catch (err) {
       console.error('Error getting listings:', err);
     } finally {
-      return listingsData;
+      return listingData;
     }
   }
 

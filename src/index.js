@@ -1,21 +1,26 @@
-const fs = require('fs/promises');
-const puppeteer = require('puppeteer-extra');
-const StealthPlugin = require('puppeteer-extra-plugin-stealth');
-
-// const puppeteerCore = require("puppeteer-core");
-// const { addExtra } = require('puppeteer-extra');
+// const fs = require('fs/promises');
+// const puppeteer = require('puppeteer-extra');
 // const StealthPlugin = require('puppeteer-extra-plugin-stealth');
-// const puppeteer = addExtra(puppeteerCore);
+// const dbTable = 'listings_duplicate';
+
+const puppeteerCore = require("puppeteer-core");
+const { addExtra } = require('puppeteer-extra');
+const StealthPlugin = require('puppeteer-extra-plugin-stealth');
+const puppeteer = addExtra(puppeteerCore);
+const dbTable = 'listings';
 
 const chromium = require("@sparticuz/chromium");
 const http = require('http');
 const allPageListings = require ('./allPageListings');
+const condition = require ('./condition');
+const groupListingData = require ('./groupListingData');
 const getInventoryPages = require ('./getInventoryPages');
+const delay = require('./delay');
 const validateListings = require('./validation/validateListings');
 const { dbInsert } = require('./db/dbInsert');
 
 const makes = ['agusta', 'aprilia', 'benelli', 'bmw', 'can-am', 'cf moto', 'ducati', 'greenger', 'guzzi', 'harley',  'hisun', 'honda', 'husqvarna', 'indian', 'karavan', 'kawasaki', 'ktm', 'kymco', 'mv agusta', 'polaris', 'royal enfield ', 'ssr', 'stacyc', 'suzuki', 'triumph', 'yamaha', 'beta', 'kayo', 'moke'];
-const dbTable = 'listings_duplicate';
+
 
 // add stealth plugin and use defaults (all evasion techniques)
 
@@ -24,6 +29,7 @@ puppeteer.use(StealthPlugin());
 exports.handler = async (event) => {
   console.log('event');
   console.log('event', event);
+  const timeout = 2000;
   const url = event.url;
   const listings = [];
   const conditionsSearched= new Set();
@@ -35,21 +41,21 @@ exports.handler = async (event) => {
 
   try {
 
-    browser = await puppeteer.launch({
-      headless: false,
-      args: [ "--disable-notifications"]
-    })
+    // browser = await puppeteer.launch({
+    //   headless: false,
+    //   args: [ "--disable-notifications"]
+    // })
 
     // browser = await puppeteer.launch({
     //   headless: false,
     //   args: [`--proxy-server=${proxyUrl}`, "--disable-notifications"]
     // })
     
-    // browser = await puppeteer.launch({
-    //   executablePath: await chromium.executablePath(),
-    //   headless: true,
-    //   args: [...chromium.args, `--proxy-server=${proxyUrl}`, "--disable-notifications"]
-    // })
+    browser = await puppeteer.launch({
+      executablePath: await chromium.executablePath(),
+      headless: true,
+      args: [...chromium.args, `--proxy-server=${proxyUrl}`, "--disable-notifications"]
+    })
     console.log('connected', browser.connected);
     
     // http.get('http://api.ipify.org', (resp) => {
@@ -108,26 +114,49 @@ exports.handler = async (event) => {
 
 
         // Iterate through all pages of the inventory type (e.g. pages 1-10 of 'new')
-        const unfilteredListings = await allPageListings(page, inventoryType, responseCount);
-        if (unfilteredListings.length > 0) {
-          let validatedListings;
+        const unfilteredListingDataPages = await allPageListings(page, inventoryType, responseCount);
+        console.log('allPageListings returned')
+        if (unfilteredListingDataPages.length > 0) {
+          console.log('indexA');
+          const validatedListingPages = [];
 
           const filteredListingUrls = listings.map(listing => listing?.url);
+          console.log('indexB');
 
           try {
             //console.log('unfiltered listings', unfilteredListings.map(el => el.innerText))
-            validatedListings = validateListings(unfilteredListings, filteredListingUrls, inventoryUrl, inventoryType);
+            for (const data of unfilteredListingDataPages) {
+              const validationResults = validateListings(data.listings, filteredListingUrls, inventoryUrl);
+              if (validationResults.size > 0) {
+                validatedListingPages.push({
+                  listings: validationResults,
+                  mileages: data.listingMileages,
+                  prices: data.listingPrices,
+                  imgs: data.listingImgs
+                })
+              }
+            }
           } catch (err) {
             console.log('Error validating listings', err);
           }
 
-          
-          
-          if (validatedListings.length > 0) {
-            listings.push(validatedListings.map(listing => ({
-              dealership: url,
-               ...listing
-            })));
+          // console.log('validated listings', validatedListingPages)
+
+          if (validatedListingPages.length > 0) {
+
+            const groupedListingPages = validatedListingPages.map(pageListings =>  groupListingData(pageListings))
+
+            groupedListingPages.forEach(pageListings => {
+
+              listings.push(pageListings.map(listing => ({
+                ...listing,
+                dealership: new URL(url).hostname,
+                condition: condition(inventoryType)
+              })))
+            });
+
+            // console.log('listings', listings)
+
             conditionsSearched.add(inventoryType);
           }
         }
@@ -135,7 +164,10 @@ exports.handler = async (event) => {
         console.log(`error getting ${inventoryType} listings`, err);
       } finally {
         try {
-          if (page && !page.isClosed()) await page?.close();
+          if (page && !page.isClosed()) await Promise.race([
+            page?.close(),
+            delay(timeout)
+          ]);
         } catch (err) {
           console.log(`Error closing page for ${inventoryType}:`, err);
         }

@@ -5,13 +5,6 @@ exports.dbInsert = async (rows, table) => {
     console.log('inserting into db:', 'table:');
     console.log('table', table);
 
-    // const results = await supabase
-    //         .from(table)
-    //         .insert(rows)
-    //         .select()
-    // console.log('results', results)
-    // return null;
-
     const insertPromises = rows.map(row =>
         supabase
             .from(table)
