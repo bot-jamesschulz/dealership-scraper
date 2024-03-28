@@ -1,22 +1,22 @@
-import fs from 'fs';
-import makes from '../../data/makeRegexes.json' assert { type: "json" };
-import findModel from './findModel.js';
-import excludedWords from '../../data/excludedWords.json' assert { type: "json" };
-import regexToMake from '../../data/regexToMake.json' assert { type: "json" };
-import bikeData from '../../data/bikeData.json' assert { type: "json" };
+const fs = require('fs');
+const makes = require('../../data/makeRegexes.json');
+const findModel = require('./findModel.js');
+const excludedWords = require('../../data/excludedWords.json');
+const hrefExcludedWords = require('../../data/hrefExcludedWords.json');
+const regexToMake = require('../../data/regexToMake.json');
+const bikeData = require('../../data/bikeData.json');
 
-export default function validateListings(unfilteredListings, inventoryHref) {
+module.exports = function validateListings(unfilteredListings, filteredListingUrls, inventoryHref) {
     console.log('validating listings')
     // Unique listing urls with appended makes to listings
-    const uniqueListingUrls = new Set();
-    const results = [];
-    const extractedData = [];
+    const uniqueListingUrls = new Set(filteredListingUrls);
+    const extractedData = new Map();
     const rejectedListings = [];
     const validYearPattern = /(?:(?<=^)|(?<=\s))((19|20)([0-9][0-9]))(?=\s|$)/g;
     let loopCount = 0;
 
     for (const listingData of unfilteredListings) {
-        // loopCount++;
+        loopCount++;
         // console.log('LOOP COUNT: ', loopCount);
         // console.log(listingData)
         
@@ -40,9 +40,10 @@ export default function validateListings(unfilteredListings, inventoryHref) {
         
         if (!validYears || noLetters) continue;
 
-        const validYear = validYears[0];
+        const validYear = parseInt(validYears[0]);
+        const validYearLength = 4;
         const yearStartIndex = cleanedListing.indexOf(validYear);
-        let yearEndIndex = yearStartIndex + validYear.length - 1;
+        let yearEndIndex = yearStartIndex + validYearLength - 1;
         
         // Add a space after the year if it doesn't already have one
         if (cleanedListing[yearEndIndex + 1] && cleanedListing[yearEndIndex + 1] !== ' ') {
@@ -54,9 +55,11 @@ export default function validateListings(unfilteredListings, inventoryHref) {
             .toLowerCase()
             .replace(/[^a-zA-Z0-9]/g, '');
 
-        const hasExcludedWords = excludedWords.some(word => alphaNumListing.includes(word));
+        const hasExcludedWord = excludedWords.some(word => alphaNumListing.includes(word));
+        const hrefHasExcludedWord = hrefExcludedWords.some(word => url.href.toLowerCase().includes(word));
 
-        if (hasExcludedWords) continue;
+
+        if (hasExcludedWord || hrefHasExcludedWord) continue;
 
         let listingMake = null;
         let makeKey = null;
@@ -101,8 +104,6 @@ export default function validateListings(unfilteredListings, inventoryHref) {
             }
         }
 
-
-
         if (!makeKey) {
             console.log(`No make key for ${listingMake}: ${cleanedListing}`);
             
@@ -115,22 +116,18 @@ export default function validateListings(unfilteredListings, inventoryHref) {
         const models = modelData.map(model => model.model);
         const listingModel = findModel(cleanedListing.toLowerCase(), models, [makeKeyEndIndex, yearEndIndex]);
         // if (true) {
-        //     console.log('MODEL: -> ', listingModel?.searchedModel);
+        //     console.log('MODEL: -> ', listingModel?.extractedModel);
         //     console.log('LISTING: -> ', cleanedListing);
         //     console.log('\n');           
         // }    
         
         if (listingModel) { 
-            results.push(cleanedListing);
-            extractedData.push({
+            extractedData.set(listingData.listingIndex, {
                 make: makeKey,
-                listingMake: listingMake,
-                extractedModel: listingModel?.extractedModel,
-                searchedModel: listingModel?.searchedModel,
+                model: listingModel?.extractedModel,
                 year: validYear,
                 listing: cleanedListing,
-                url: url.href,
-                img: listingData.img
+                detailsUrl: url.href,
             })
         } else {
             rejectedListings.push(cleanedListing);
