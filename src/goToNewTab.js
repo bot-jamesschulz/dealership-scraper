@@ -14,8 +14,8 @@ async function goToNewTab(url, browser) {
         page = await browser.newPage();
 
         await page.authenticate({
-        username: proxyUsername,
-        password: proxyPassword
+            username: proxyUsername,
+            password: proxyPassword
         });
 
         await page.setRequestInterception(true);

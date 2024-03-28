@@ -12,11 +12,15 @@ function groupListingData(listingData) {
   let groupedListingData;
   try { 
     groupedListingData = listingIndices.map( (listingPosition, index) => {
+       
+      const nearestListingPosition = listingIndices[index + 1] ?
+        listingIndices[index + 1] :
+        listingIndices[index - 1];
         
-      const nearestListingPosition = index === listingIndices.length - 1 ?
-        listingIndices[index - 1] :
-        listingIndices[index + 1];
-      const distanceToNearestListing = Math.abs(listingPosition - nearestListingPosition);
+      const defaultDistance = 250;
+      const distanceToNearestListing = listingIndices.length === 1 ? 
+        defaultDistance : 
+        Math.abs(listingPosition - nearestListingPosition);
       
       console.log('curr listing', listingPosition);
       console.log('nearest listing listing', nearestListingPosition);

@@ -16,9 +16,10 @@ async function allPageListings(page, inventoryType, responseCount, listingData =
       const url= page.url();
       console.log("getting listings on:", url);
       
-    
       console.log('testw')
       const listings = await pageListings(page)
+
+      // await new Promise(resolve => setTimeout(() => resolve,1000000))
   
       console.log('testx')
   
@@ -29,7 +30,6 @@ async function allPageListings(page, inventoryType, responseCount, listingData =
       }
       console.log('testz')
   
-      
       //console.log(`Listings for page ${listingData.length + 1}: ${url}`);
       //logNestedObject(listings);
       
@@ -49,6 +49,8 @@ async function allPageListings(page, inventoryType, responseCount, listingData =
   
       const nextResponseCount = responseCount.count;
       console.log('resCount after newPage:', responseCount.count);
+
+      // console.log('listingData listings', listingData.map(data => data.listings))
   
       let continueListingSearch = isNewListings(listingData.map(data => data.listings).flat(), nextPagelistingData?.listings) && currResponseCount !== nextResponseCount;
       // Compare the current page listings to the next page listings

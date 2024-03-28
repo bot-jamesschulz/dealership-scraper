@@ -11,12 +11,12 @@ const delay = require('./delay');
 async function getNextPage(page, inventoryType) {
     const timeout = 10000;
     const xpaths = [
-      `xpath/.//*[@aria-label[contains(translate(., 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), "next")]]`,
-      `xpath/.//*[@title[contains(translate(., 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), "next")]]`,
-      `xpath/.//span[contains(translate(., 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), "next")]`,
-      `xpath/.//*[@class[contains(translate(., 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), "next")]]`,
-      `xpath/.//a[contains(translate(., 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), "next")]`,
-      `xpath/.//a[contains(translate(., 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), ">")]`
+      `xpath/(.//*[@aria-label[contains(translate(., 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), "next")]])[position() > (last() div 2)]`,
+      `xpath/(.//*[@title[contains(translate(., 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), "next")]])[position() > (last() div 2)]`,
+      `xpath/(.//span[contains(translate(., 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), "next")])[position() > (last() div 2)]`,
+      `xpath/(.//*[@class[contains(translate(., 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), "next")]])[position() > (last() div 2)]`,
+      `xpath/(.//a[contains(translate(., 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), "next")])[position() > (last() div 2)]`,
+      `xpath/(.//a[contains(translate(., 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), ">")])[position() > (last() div 2)]`
     ];
     try {
       console.log("getting next page");
@@ -27,9 +27,9 @@ async function getNextPage(page, inventoryType) {
           delay(timeout)]);
         // Reverse the order so that we look from the bottom of the page up. This is to avoid false positives: for example, if there is a next element in an image carousel.
         elementHandles.reverse();
+        
         // Attempt to click each element
         for (const handle of elementHandles) {
-          
           console.log('testa3');
           const nextPage = await handleElement(page, handle, inventoryType);
           if (nextPage) {

@@ -1,17 +1,16 @@
-// const fs = require('fs/promises');
-// const puppeteer = require('puppeteer-extra');
-// const StealthPlugin = require('puppeteer-extra-plugin-stealth');
-// const dbTable = 'listings_duplicate';
-
-const puppeteerCore = require("puppeteer-core");
-const { addExtra } = require('puppeteer-extra');
+const fs = require('fs/promises');
+const puppeteer = require('puppeteer-extra');
 const StealthPlugin = require('puppeteer-extra-plugin-stealth');
-const puppeteer = addExtra(puppeteerCore);
-const dbTable = 'listings';
-const proxyUrl = process.env.PROXY_URL;
+const dbTable = 'listings_duplicate';
 
+// const puppeteerCore = require("puppeteer-core");
+// const { addExtra } = require('puppeteer-extra');
+// const StealthPlugin = require('puppeteer-extra-plugin-stealth');
+// const puppeteer = addExtra(puppeteerCore);
+// const dbTable = 'listings';
+
+require('dotenv').config();
 const chromium = require("@sparticuz/chromium");
-const http = require('http');
 const allPageListings = require ('./allPageListings');
 const condition = require ('./condition');
 const groupListingData = require ('./groupListingData');
@@ -19,6 +18,8 @@ const getInventoryPages = require ('./getInventoryPages');
 const delay = require('./delay');
 const validateListings = require('./validation/validateListings');
 const { dbInsert } = require('./db/dbInsert');
+const proxyUrl = process.env.PROXY_URL;
+
 
 const makes = ['agusta', 'aprilia', 'benelli', 'bmw', 'can-am', 'cf moto', 'ducati', 'greenger', 'guzzi', 'harley',  'hisun', 'honda', 'husqvarna', 'indian', 'karavan', 'kawasaki', 'ktm', 'kymco', 'mv agusta', 'polaris', 'royal enfield ', 'ssr', 'stacyc', 'suzuki', 'triumph', 'yamaha', 'beta', 'kayo', 'moke'];
 
@@ -42,21 +43,21 @@ exports.handler = async (event) => {
 
   try {
 
-    // browser = await puppeteer.launch({
-    //   headless: false,
-    //   args: [ "--disable-notifications"]
-    // })
+    browser = await puppeteer.launch({
+      headless: false,
+      args: [ "--disable-notifications"]
+    })
 
     // browser = await puppeteer.launch({
     //   headless: false,
     //   args: [`--proxy-server=${proxyUrl}`, "--disable-notifications"]
     // })
     
-    browser = await puppeteer.launch({
-      executablePath: await chromium.executablePath(),
-      headless: true,
-      args: [...chromium.args, `--proxy-server=${proxyUrl}`, "--disable-notifications"]
-    })
+    // browser = await puppeteer.launch({
+    //   executablePath: await chromium.executablePath(),
+    //   headless: true,
+    //   args: [...chromium.args, `--proxy-server=${proxyUrl}`, "--disable-notifications"]
+    // })
     console.log('connected', browser.connected);
     
     // http.get('http://api.ipify.org', (resp) => {

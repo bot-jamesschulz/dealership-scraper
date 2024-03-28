@@ -2,6 +2,7 @@ const fs = require('fs');
 const makes = require('../../data/makeRegexes.json');
 const findModel = require('./findModel.js');
 const excludedWords = require('../../data/excludedWords.json');
+const hrefExcludedWords = require('../../data/hrefExcludedWords.json');
 const regexToMake = require('../../data/regexToMake.json');
 const bikeData = require('../../data/bikeData.json');
 
@@ -54,9 +55,11 @@ module.exports = function validateListings(unfilteredListings, filteredListingUr
             .toLowerCase()
             .replace(/[^a-zA-Z0-9]/g, '');
 
-        const hasExcludedWords = excludedWords.some(word => alphaNumListing.includes(word));
+        const hasExcludedWord = excludedWords.some(word => alphaNumListing.includes(word));
+        const hrefHasExcludedWord = hrefExcludedWords.some(word => url.href.toLowerCase().includes(word));
 
-        if (hasExcludedWords) continue;
+
+        if (hasExcludedWord || hrefHasExcludedWord) continue;
 
         let listingMake = null;
         let makeKey = null;

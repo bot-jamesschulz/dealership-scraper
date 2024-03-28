@@ -12,7 +12,8 @@ async function getListingData(page) {
         console.log('Page evaluation start');
   
         const mileageVocab = ['mile', 'odometer']
-        const MINIMUM_IMG_DIST = 10;
+        const minImgDist = 10;
+        const maxTextLength = 250;
         let prevImgIndex = 0;
         const listings = [];
         const listingImgs = {};
@@ -33,7 +34,6 @@ async function getListingData(page) {
           const trimmedText = element.innerText
             ?.trim()
             .replace(/\r?\n|\r|\s+/,' ');
-
             
           let wholeText;
           const children = element.childNodes;
@@ -46,7 +46,7 @@ async function getListingData(page) {
               
           // Looking for price
 
-          if (wholeText?.includes('$') && wholeText?.length < 100) {
+          if (wholeText?.includes('$') && wholeText?.length < maxTextLength) {
             // console.log('aabaa $$', wholeText)
             const priceRegex = /\$[\d,]+/;
 
@@ -108,7 +108,7 @@ async function getListingData(page) {
           }
           // Looking for listings
           if (trimmedText && element.tagName === "A") {
-            
+            // console.log('aabaa trimmedText', element.getAttribute("href"))
             listings.push({
               listingIndex: index,
               innerText: trimmedText, 
@@ -119,7 +119,7 @@ async function getListingData(page) {
           // Get images
           let closestImgDist = Math.abs(prevImgIndex-index);
   
-          if (closestImgDist <= MINIMUM_IMG_DIST) continue;
+          if (closestImgDist <= minImgDist) continue;
           
           // Make sure that the image isn't part of a subsection/gallery of images
           if ((element.tagName === 'IMG') || (element.tagName === 'INPUT') 
@@ -133,7 +133,7 @@ async function getListingData(page) {
             const waitForSrc = async () => {
               
               if (element.getAttribute('src')) {
-                console.log('aabaa in src')
+                // console.log('aabaa in src')
                 let url;
                 try {
                   url = new URL(element.getAttribute('src'), window.location.href )
@@ -148,7 +148,7 @@ async function getListingData(page) {
               }
               //console.log('aabaa looking for srcset')
               if (element.getAttribute('srcset')) {
-                //console.log('aabaa in srcset')
+                // console.log('aabaa in srcset')
                 let url;
                 url = element.getAttribute('srcset');
                 const endOfUrl = url.indexOf(' ');
