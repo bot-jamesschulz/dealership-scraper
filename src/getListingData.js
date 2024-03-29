@@ -66,7 +66,7 @@ async function getListingData(page) {
 
           // Looking for mileage
           if (wholeText && mileageVocab.find(vocab => wholeText.toLowerCase().includes(vocab))) {
-            const mileageRegex = /[\d,]+/;
+            const mileageRegex = /[\d,]+/g;
             const trimmedText = element.innerText
               ?.trim()
               .replace(/\r?\n|\r|\s+/,' ');
@@ -94,15 +94,13 @@ async function getListingData(page) {
             while (!mileage && index + offset < elements.length) {
               offset++;
               currElement = elements[index + offset];
-              const currElementInnerText = currElement?.innerText;
-              if (currElementInnerText?.length < maxTextLength) {
-                mileage = currElementInnerText?.match(mileageRegex);
+              const currElemInnerText = currElement?.innerText;
+              if (currElemInnerText?.length < maxTextLength) {
+                mileage = currElemInnerText?.match(mileageRegex);
               }
             } 
 
-            const trimmedMileage = mileage?.[0].replace(/\D/g, "");
-
-            // console.log('aabaa mileage', trimmedMileage);
+            const trimmedMileage = mileage?.[mileage.length - 1].replace(/\D/g, "");
             
             listingMileages[index] = trimmedMileage;
           }
