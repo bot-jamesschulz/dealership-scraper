@@ -11,24 +11,20 @@ const goToNewTab = require('./goToNewTab');
  * @returns {Map} - A Map containing the inventory pages.
  * @throws {err} - If there is an error getting the inventory pages.
  */
-async function getInventoryPages (url, browser, makes) {
+async function getInventoryPages (url, browser) {
     const INVENTORY_KEYWORDS = ["new","used","owned","all","inventory"];
     const HOME_KEYWORDS = ["home"];
     let page, hrefs, forSaleUrl, forSaleHref;
     let inventoryPages = new Map();
     try {
-      console.log('testk')
       page = await goToNewTab(url,browser);
   
-      console.log('testl')
       if (!page) {
         return null;
       }
-      console.log('testm')
       
       // Search for links to inventory pages
       hrefs = await sortedPageSearch(page,INVENTORY_KEYWORDS);
-      console.log('testn')
       console.log("hrefs:", hrefs);
       let validInventoryPageSet = isValidInventoryPageSet(hrefs);
   

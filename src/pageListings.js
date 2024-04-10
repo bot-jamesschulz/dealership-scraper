@@ -20,7 +20,6 @@ async function pageListings(page) {
       listingData = await Promise.race([
         getListingData(page), 
         delay(timeout)]);
-      console.log('racea done')
     } catch (err) {
       console.log('error waiting for listings', err);
     }

@@ -21,10 +21,6 @@ function groupListingData(listingData) {
       const distanceToNearestListing = listingIndices.length === 1 ? 
         defaultDistance : 
         Math.abs(listingPosition - nearestListingPosition);
-      
-      console.log('curr listing', listingPosition);
-      console.log('nearest listing listing', nearestListingPosition);
-      console.log('distance to nearest listing', distanceToNearestListing);
 
       // Associate image
       let closestImgIndex = imgIndices[imgIndices.length - 1]; // Default to last img
@@ -34,7 +30,6 @@ function groupListingData(listingData) {
         const imgDistance = Math.abs(imgIndices[i] - listingPosition);
         const nextImgDistance = Math.abs(imgIndices[i + 1] - listingPosition);
         if (nextImgDistance > imgDistance) {
-          //console.log(`imgIndices[i]: ${imgIndices[i]} | listingPosition: ${listingPosition}`)
           closestImgIndex =  imgIndices[i];
           break;
         }
@@ -47,7 +42,6 @@ function groupListingData(listingData) {
       while (!listingPrices[closestPricePosition] &&
         closestPricePosition < listingPrices.length &&
         distanceToPrice < distanceToNearestListing) {
-        // console.log('price at closestPricePosition', listingPrices[closestPricePosition])
         distanceToPrice++;
         closestPricePosition++;
       }
@@ -58,13 +52,9 @@ function groupListingData(listingData) {
       while (!listingMileages[closestMileagePosition] &&
         closestMileagePosition < listingMileages.length &&
         distanceToMileage < distanceToNearestListing) {
-        // console.log('mileage at closestMileagePosition', listingMileages[closestPricePosition])
         distanceToMileage++;
         closestMileagePosition++;
       }
-
-      console.log('distanceToMileage', distanceToMileage);
-      console.log('closestMileagePosition', closestMileagePosition)
 
       const closestImg = listingImgs[closestImgIndex];
       const closestPrice = listingPrices[closestPricePosition];
@@ -78,7 +68,6 @@ function groupListingData(listingData) {
         price: closestPrice,
         mileage: closestMileage
       }
-      console.log('groupedListing', groupedListing)
     return groupedListing;
 
   });

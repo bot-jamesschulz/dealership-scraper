@@ -24,11 +24,8 @@ async function sortedPageSearch(page, keywords, anchorContentSearch, innerTextSe
         // Search for keywords in the text content of the anchors
         if (keywords.length > 0 && !innerTextSearch) {
           for (const keyword of keywords) {
-            console.log('tests');
             const xpath = `xpath/.//a[contains(translate(., 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), "${keyword}")]`; 
-            console.log('tests1');
             const elementHandles = await page.$$(xpath);
-            console.log('testt');
             if (elementHandles.length > 0) {
               // // Pull the hrefs from the anchors
               

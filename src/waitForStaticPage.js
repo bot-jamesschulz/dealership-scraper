@@ -12,9 +12,7 @@ async function waitForStaticPage(page, maxAttempts = 5) {
   
     while(!pageLoaded && attempts <= maxAttempts) {
       try { 
-        console.log('testb');
         await waitForNewContent(page);
-        console.log('testb2');
   
         if (!page) continue;
   

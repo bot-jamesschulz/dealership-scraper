@@ -3,10 +3,6 @@ async function getListingData(page) {
     let listingData;
   
     try {
-  
-      // Make sure lazy loaded images get loaded
-      console.log('testa');
-      
       // Extract the images/listings from the page, keyed by their position in the DOM
       listingData = await page.evaluate(async () => {
         console.log('Page evaluation start');
@@ -47,7 +43,6 @@ async function getListingData(page) {
           // Looking for price
 
           if (wholeText?.includes('$') && wholeText?.length < maxTextLength) {
-            // console.log('aabaa $$', wholeText)
             const priceRegex = /\$[\d,]+/;
 
             let price = trimmedText?.match(priceRegex);
@@ -61,7 +56,6 @@ async function getListingData(page) {
             if (trimmedPrice) {
               listingPrices[index] = trimmedPrice;       
             }
-             console.log('aabaa trimmedPrice', index, trimmedPrice)
           }
 
           // Looking for mileage
@@ -73,8 +67,6 @@ async function getListingData(page) {
             
 
             let mileage = trimmedText?.match(mileageRegex);
-
-            // console.log('aabaa initial mileage:', mileage?.[0], trimmedText)
             
             // First check to see if mileage is present in the previous element
             // const strictMileage = /^[0-9.,!]+$/;
@@ -106,7 +98,7 @@ async function getListingData(page) {
           }
           // Looking for listings
           if (trimmedText && element.tagName === "A") {
-            // console.log('aabaa trimmedText', element.getAttribute("href"))
+
             listings.push({
               listingIndex: index,
               innerText: trimmedText, 
@@ -131,22 +123,22 @@ async function getListingData(page) {
             const waitForSrc = async () => {
               
               if (element.getAttribute('src')) {
-                // console.log('aabaa in src')
+
                 let url;
                 try {
                   url = new URL(element.getAttribute('src'), window.location.href )
                 } catch (err) {}
   
                 if (url.href.startsWith('http')) {
-                  //console.log('src')
+
                   listingImgs[index] = url.href; // Save the img's url with an associated element index, for use later to find closest listing element
                   prevImgIndex = index;
                   return;
                 }
               }
-              //console.log('aabaa looking for srcset')
+
               if (element.getAttribute('srcset')) {
-                // console.log('aabaa in srcset')
+
                 let url;
                 url = element.getAttribute('srcset');
                 const endOfUrl = url.indexOf(' ');
@@ -159,17 +151,14 @@ async function getListingData(page) {
               elapsedTime += waitInterval;
               ++waitCount;
               if (elapsedTime < maxWaitTime) {
-                console.log(' a')
+
                 await new Promise(resolve => setTimeout(resolve, waitInterval));
-                console.log(' b')
+
                 await waitForSrc();
-                console.log(' c')
               }
             };
-            console.log(' d')
             
             await waitForSrc();
-            console.log(' e')
           }
           // Make sure that the background-image isn't part of a subsection/gallery of images
           if (backgroundImg) {
@@ -183,16 +172,12 @@ async function getListingData(page) {
 
         return {listings, listingImgs, listingPrices, listingMileages};
       });
-      // console.log('page data', listingData?.listingImgs);
     } catch(err) {
       console.log('error retrieving data/images from the DOM',err)
       return;
     }
-    console.log('testv');
   
     return listingData;
-    //console.log('images:',  listingImgs, 'length', Object.keys(listingImgs).length);
-    //console.log("Searching for listings on:", page.url())
   }
   
 
