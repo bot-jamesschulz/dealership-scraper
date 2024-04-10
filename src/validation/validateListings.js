@@ -1,4 +1,3 @@
-const fs = require('fs');
 const makes = require('../../data/makeRegexes.json');
 const findModel = require('./findModel.js');
 const excludedWords = require('../../data/excludedWords.json');
@@ -13,12 +12,8 @@ module.exports = function validateListings(unfilteredListings, filteredListingUr
     const extractedData = new Map();
     const rejectedListings = [];
     const validYearPattern = /(?:(?<=^)|(?<=\s))((19|20)([0-9][0-9]))(?=\s|$)/g;
-    let loopCount = 0;
 
     for (const listingData of unfilteredListings) {
-        loopCount++;
-        // console.log('LOOP COUNT: ', loopCount);
-        // console.log(listingData)
         
         const url = makeUrl(listingData?.href, inventoryHref);
 
@@ -57,7 +52,6 @@ module.exports = function validateListings(unfilteredListings, filteredListingUr
 
         const hasExcludedWord = excludedWords.some(word => alphaNumListing.includes(word));
         const hrefHasExcludedWord = hrefExcludedWords.some(word => url.href.toLowerCase().includes(word));
-
 
         if (hasExcludedWord || hrefHasExcludedWord) continue;
 
@@ -104,22 +98,12 @@ module.exports = function validateListings(unfilteredListings, filteredListingUr
             }
         }
 
-        if (!makeKey) {
-            console.log(`No make key for ${listingMake}: ${cleanedListing}`);
-            
-        }
-
         const makeKeyStartIndex = cleanedListing.indexOf(listingMake);
         const makeKeyEndIndex = makeKeyStartIndex + listingMake.length - 1;
 
         const modelData = bikeData[makeKey];
         const models = modelData.map(model => model.model);
         const listingModel = findModel(cleanedListing.toLowerCase(), models, [makeKeyEndIndex, yearEndIndex]);
-        // if (true) {
-        //     console.log('MODEL: -> ', listingModel?.extractedModel);
-        //     console.log('LISTING: -> ', cleanedListing);
-        //     console.log('\n');           
-        // }    
         
         if (listingModel) { 
             extractedData.set(listingData.listingIndex, {
@@ -134,19 +118,6 @@ module.exports = function validateListings(unfilteredListings, filteredListingUr
         }
     }
 
-
-    // fs.writeFile('./sanitizationTesting/sanitizedResults.json', JSON.stringify(results) , 'utf-8', (err) => {
-    //     if (err) throw err;
-    //     console.log('The file has been saved!');
-    // });
-    // fs.writeFile('./sanitizationTesting/extractedData.json', JSON.stringify(extractedData) , 'utf-8', (err) => {
-    //     if (err) throw err;
-    //     console.log('The file has been saved!');
-    // });
-    // fs.writeFile('./sanitizationTesting/rejectedListings.json', JSON.stringify(rejectedListings) , 'utf-8', (err) => {
-    //     if (err) throw err;
-    //     console.log('The file has been saved!');
-    // });
     return extractedData;
 }
 

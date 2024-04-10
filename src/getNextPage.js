@@ -30,7 +30,6 @@ async function getNextPage(page, inventoryType) {
         
         // Attempt to click each element
         for (const handle of elementHandles) {
-          console.log('testa3');
           const nextPage = await handleElement(page, handle, inventoryType);
           if (nextPage) {
             console.log("Returning next page"); 

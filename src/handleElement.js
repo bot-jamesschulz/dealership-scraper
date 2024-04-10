@@ -35,10 +35,8 @@ async function handleElement(page, nextElement,inventoryType) {
   
   
     try {
-  
       await nextElement.scrollIntoView();
       
-  
       console.log('waiting for new page')
       
       await Promise.all([
@@ -49,11 +47,9 @@ async function handleElement(page, nextElement,inventoryType) {
       console.log('next page loaded')
   
     } catch(err) {
-      console.log('teste2')
       console.log('error navigating to the next page', err)
       return null;
     }
-    console.log('testf')
     return page;  
   }
 

@@ -30,7 +30,6 @@ async function waitForNewContent(page, { idleTime = 750, timeout = 4000, minFulf
   };
 
   const loadListener = () => {
-    console.log('load event fired')
     pageLoaded = true;
   };
 
@@ -62,7 +61,7 @@ async function waitForNewContent(page, { idleTime = 750, timeout = 4000, minFulf
         && finishedRequests >= requests 
         && finishedRequests >= minFulfilled)
       || pageLoaded) {
-        console.log('new content loaded ##############')
+        console.log('new content loaded')
         clearTimeout(timeoutID);
         clearInterval(intervalID);
 

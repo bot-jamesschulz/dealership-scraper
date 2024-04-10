@@ -1,7 +1,7 @@
 
 const supabase = require('./dbConfig');
 
-exports.dbInsert = async (rows, table) => {
+exports.dbInsert = async (table, rows) => {
     console.log('inserting into db:', 'table:');
     console.log('table', table);
 
