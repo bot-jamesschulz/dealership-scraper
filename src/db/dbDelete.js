@@ -1,11 +1,11 @@
 const supabase = require('./dbConfig');
 
-exports.dbDelete = async (table, key) => {
+exports.dbDelete = async (table, dealershipHostname) => {
 
     const { data, error } = await supabase
     .from(table)
     .delete()
-    .neq(key, null)
+    .eq('dealership', dealershipHostname)
 
     if (error) console.log(error)
 

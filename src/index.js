@@ -1,13 +1,13 @@
-const fs = require('fs/promises');
-const puppeteer = require('puppeteer-extra');
-const StealthPlugin = require('puppeteer-extra-plugin-stealth');
-const dbTable = 'listings_duplicate';
-
-// const puppeteerCore = require("puppeteer-core");
-// const { addExtra } = require('puppeteer-extra');
+// const fs = require('fs/promises');
+// const puppeteer = require('puppeteer-extra');
 // const StealthPlugin = require('puppeteer-extra-plugin-stealth');
-// const puppeteer = addExtra(puppeteerCore);
-// const dbTable = 'listings';
+// const dbTable = 'listings_duplicate';
+
+const puppeteerCore = require("puppeteer-core");
+const { addExtra } = require('puppeteer-extra');
+const StealthPlugin = require('puppeteer-extra-plugin-stealth');
+const puppeteer = addExtra(puppeteerCore);
+const dbTable = 'listings';
 
 require('dotenv').config();
 const chromium = require("@sparticuz/chromium");
@@ -18,6 +18,7 @@ const getInventoryPages = require ('./getInventoryPages');
 const delay = require('./delay');
 const validateListings = require('./validation/validateListings');
 const { dbInsert } = require('./db/dbInsert');
+const { dbDelete } = require('./db/dbDelete');
 const proxyUrl = process.env.PROXY_URL;
 
 
@@ -33,6 +34,7 @@ exports.handler = async (event) => {
   console.log('event', event);
   const timeout = 2000;
   const url = event.url;
+  const dealershipHostname = new URL(url).hostname;
   const listings = [];
   const conditionsSearched= new Set();
   let browser;
@@ -43,21 +45,21 @@ exports.handler = async (event) => {
 
   try {
 
-    browser = await puppeteer.launch({
-      headless: false,
-      args: [ "--disable-notifications"]
-    })
+    // browser = await puppeteer.launch({
+    //   headless: false,
+    //   args: [ "--disable-notifications"]
+    // })
 
     // browser = await puppeteer.launch({
     //   headless: false,
     //   args: [`--proxy-server=${proxyUrl}`, "--disable-notifications"]
     // })
     
-    // browser = await puppeteer.launch({
-    //   executablePath: await chromium.executablePath(),
-    //   headless: true,
-    //   args: [...chromium.args, `--proxy-server=${proxyUrl}`, "--disable-notifications"]
-    // })
+    browser = await puppeteer.launch({
+      executablePath: await chromium.executablePath(),
+      headless: true,
+      args: [...chromium.args, `--proxy-server=${proxyUrl}`, "--disable-notifications"]
+    })
     console.log('connected', browser.connected);
     
     // http.get('http://api.ipify.org', (resp) => {
@@ -152,7 +154,7 @@ exports.handler = async (event) => {
 
               listings.push(pageListings.map(listing => ({
                 ...listing,
-                dealership: new URL(url).hostname,
+                dealership: dealershipHostname,
                 condition: condition(inventoryType)
               })))
             });
@@ -201,13 +203,19 @@ exports.handler = async (event) => {
   } 
   console.log('testi')
   try {
-    const errors = await dbInsert(listings, dbTable)
+    const deleteErrors = await dbDelete(dbTable, dealershipHostname)
 
-    if (errors) {
-      console.log('errors inserting into db', errors);
+    if (deleteErrors) {
+      console.log('error inserting into db', deleteErrors);
+    }
+    
+    const insertErrors = await dbInsert(dbTable, listings)
+
+    if (insertErrors) {
+      console.log('errors inserting into db', insertErrors);
     }
   } catch (err) {
-    console.log('Error inserting to db:', err);
+    console.log('Error updating listings in db:', err);
   }
 
   const response = {

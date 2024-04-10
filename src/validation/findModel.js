@@ -77,12 +77,6 @@ module.exports = function findModel(listing, models, searchIndices) {
       extractedModel = modelExtracted;              
     }
 
-
-    // if (bestMatch?.score > IDENTICAL_MATCH) {
-    //     console.log(`MODEL SEARCHED: ${searchedModel} \n bestMatch:`, bestMatch);
-    // }
-
-    
   }
 
   return extractedModel ? { extractedModel, searchedModel } : null;
