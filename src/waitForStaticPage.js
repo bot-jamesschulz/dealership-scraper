@@ -11,6 +11,8 @@ async function waitForStaticPage(page, maxAttempts = 5) {
     let pageLoaded;
   
     while(!pageLoaded && attempts <= maxAttempts) {
+      attempts++;
+      console.log('attempts', attempts)
       try { 
         await waitForNewContent(page);
   
@@ -32,7 +34,6 @@ async function waitForStaticPage(page, maxAttempts = 5) {
       if (attempts > maxAttempts) {    
         throw new Error('Max attempts for network idle reached');
       }  
-      attempts++;
     }
   
     console.log("Page is static");

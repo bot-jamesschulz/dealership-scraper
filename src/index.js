@@ -1,3 +1,4 @@
+// Local Testing
 // const fs = require('fs/promises');
 // const puppeteer = require('puppeteer-extra');
 // const StealthPlugin = require('puppeteer-extra-plugin-stealth');
@@ -19,7 +20,7 @@ const delay = require('./delay');
 const validateListings = require('./validation/validateListings');
 const { dbInsert } = require('./db/dbInsert');
 const { dbDelete } = require('./db/dbDelete');
-const proxyUrl = process.env.PROXY_URL;
+const getProxy = require('./getProxy');
 
 puppeteer.use(StealthPlugin());
 
@@ -35,14 +36,29 @@ exports.handler = async (event) => {
   console.log('url', url)
  
   let inventoryUrl;
+  let proxyUrl;
 
   try {
+     proxyUrl = await getProxy();
+     console.log('proxy url', proxyUrl)
+     if (!proxyUrl) return { statusCode: 500 }
+  } catch (e) {
+    console.log('error retrieving proxy', e)
+    return { statusCode: 500 }
+  }
+
+  try {
+
+    // browser = await puppeteer.launch({
+    //   args: [...chromium.args, `--proxy-server=${proxyUrl}`, "--disable-notifications"]
+    // })
 
     browser = await puppeteer.launch({
       executablePath: await chromium.executablePath(),
       headless: true,
       args: [...chromium.args, `--proxy-server=${proxyUrl}`, "--disable-notifications"]
     })
+    
     console.log('connected', browser.connected);
     console.log('url', url);
     console.log('browser version', await browser.version());
